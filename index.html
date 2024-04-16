@@ -13,9 +13,6 @@
             background: black;
             color: white;
             font-family: "Chakra Petch", sans-serif;
-        }
-
-        html {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
@@ -24,6 +21,19 @@
             display: none;
         }
 
+::-moz-selection { /* Code for Firefox */
+  color: #0062ff;
+  background: #ffb300;
+}
+
+::selection {
+  color: #0062ff;
+  background: #ffb300;
+}
+
+        * {
+            cursor: url("cursor.png"), auto;
+        }
 
         .logBox {
             font-family: "Chakra Petch", sans-serif;
