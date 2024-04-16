@@ -15,6 +15,16 @@
             font-family: "Chakra Petch", sans-serif;
         }
 
+        html {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        html::-webkit-scrollbar {
+            display: none;
+        }
+
+
         .logBox {
             font-family: "Chakra Petch", sans-serif;
         }
@@ -44,6 +54,8 @@
             bottom: 20px;
             font-size: 72px;
             line-height: 0;
+            z-index: 1;
+            text-shadow: 0 0 20px black;
         }
     </style>
 </head>
@@ -137,7 +149,7 @@
             found.push(coords);
             console.log(coords);
             drawWoodland(true, x, z);
-            logBox.innerText += `Located someone between ${x * 1280 - 128},${z * 1280 - 128} and ${x * 1280 + 1151},${z * 1280 + 1151}\n`;
+            logBox.innerText = `Located someone between [${x * 1280 - 128}, ${z * 1280 - 128}] and [${x * 1280 + 1151}, ${z * 1280 + 1151}]\n` + logBox.innerText;
         } else {
             logBoxVerbose.innerText += `Location already found (${coords})\n`;
             drawWoodland(false, x, z);
@@ -210,14 +222,14 @@
             lastValue = value;
         }
         progressBar.value = 100;
-        logBox.innerText += "Done!"
+        logBox.innerText = "Done!\n" + logBox.innerText
         console.log("Done");
     }
 
     replayFileInput.addEventListener("change", async () => {
         if (replayFileInput.files.length >= 1) {
             for (const replayFile of replayFileInput.files) {
-                logBox.innerText += `Processing ${replayFile.name}...\n`;
+                logBox.innerText = `Processing ${replayFile.name}...\n` + logBox.innerText;
                 await readReplayFile(replayFile);
             }
         }
