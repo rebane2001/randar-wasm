@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Randar :3</title>
+    <script src="zip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <style type="text/css">
+        html {
+            background: black;
+            color: white;
+            font-family: "Chakra Petch", sans-serif;
+        }
+
+        .logBox {
+            font-family: "Chakra Petch", sans-serif;
+        }
+
+        #logBoxVerbose {
+            position: absolute;
+            width: 600px;
+            right: 0;
+            bottom: 0;
+            opacity: 0.25;
+            text-align: right;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+            z-index: -1;
+            height: 100%;
+        }
+
+        h1 {
+            position: absolute;
+            left: 40px;
+            bottom: 20px;
+            font-size: 72px;
+            line-height: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Randar</h1>
+<input type="file" id="replayFileInput" multiple />
+<progress id="progressBar" max="100" value="0"></progress>
+<div class="logBox" id="logBox"></div>
+<div class="logBox" id="logBoxVerbose"></div>
+<canvas id="canvas" width="1000" height="1000"></canvas>
+<script>
+    var Module = { print: gotOutput };
+
+    const replayFileInput = document.getElementById("replayFileInput");
+    const progressBar = document.getElementById("progressBar");
+    const logBox = document.getElementById("logBox");
+    const logBoxVerbose = document.getElementById("logBoxVerbose");
+    const canvas = document.getElementById("canvas");
+
+    const ctx = canvas.getContext("2d");
+    const canvasDist = 2000000;
+    const canvasScale = canvasDist/500;
+
+    const found = [];
+
+    const audioContext = new AudioContext();
+    function beep(t, f, l, v) {
+      const vol = audioContext.createGain();
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = t;
+      oscillator.frequency.value = f;
+      oscillator.connect(vol);
+      vol.connect(audioContext.destination);
+      vol.gain.value = v;
+      oscillator.start();
+      setTimeout(() => oscillator.stop(), l);
+    }
+
+    function drawHighways() {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.strokeStyle = "rgba(128, 128, 0, 0.75)";
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height/2);
+        ctx.lineTo(canvas.width, canvas.height/2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(canvas.width/2, 0);
+        ctx.lineTo(canvas.width/2, canvas.height);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(128, 128, 0, 0.25)";
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(canvas.width, 0);
+        ctx.lineTo(0, canvas.height);
+        ctx.stroke();
+    }
+
+    function drawDrop(x, z) {
+        const dropSize = 1;
+        ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
+        // ctx.fillRect( (canvasDist+x)/canvasScale, (canvasDist+z)/canvasScale, 2, 2 );
+        ctx.beginPath();
+        ctx.arc((canvasDist+x)/canvasScale, (canvasDist+z)/canvasScale, dropSize, 0, 2 * Math.PI, false);
+        ctx.fill();
+        beep("sine", 100 + Math.random()*100, 25, 0.2);
+    }
+
+    function drawWoodland(first, x, z) {
+        const woodlandSize = 3;
+        ctx.fillStyle = `rgba(0, 255, 0, ${first ? 0.4 : 0.05})`;
+        // ctx.fillRect( (canvasDist+x*1280 - woodlandSize)/canvasScale, (canvasDist+z*1280 - woodlandSize)/canvasScale, woodlandSize*2, woodlandSize*2 );
+        ctx.beginPath();
+        ctx.arc((canvasDist+x*1280)/canvasScale, (canvasDist+z*1280)/canvasScale, woodlandSize, 0, 2 * Math.PI, false);
+        ctx.fill();
+        beep("square", 100 + Math.random()*100, 75, first ? 0.4 : 0.04);
+    }
+
+    function gotOutput(output) {
+        if (output.startsWith("c")) {
+            gotCoords(output.slice(1));
+        }
+    }
+    
+    function gotCoords(coords) {
+        const [x, z] = coords.split(",").map(e => parseInt(e));
+        if (!found.includes(coords)) {
+            found.push(coords);
+            console.log(coords);
+            drawWoodland(true, x, z);
+            logBox.innerText += `Located someone between ${x * 1280 - 128},${z * 1280 - 128} and ${x * 1280 + 1151},${z * 1280 + 1151}\n`;
+        } else {
+            logBoxVerbose.innerText += `Location already found (${coords})\n`;
+            drawWoodland(false, x, z);
+            // beep("sine", 100 + Math.random()*100, 25, 0.2);
+        }
+    }
+
+    async function readReplayFile(replayFile) {
+        const entries = await (new zip.ZipReader(new zip.BlobReader(replayFile))).getEntries({});
+        const recordingEntry = entries.find(e => e.filename === "recording.tmcpr");
+        const recordingSize = recordingEntry.uncompressedSize;
+        const recording = await recordingEntry.getData(new zip.BlobWriter(), {});
+        const recordingReader = recording.stream().getReader();
+        let lastValue = new Uint8Array([]);
+        let totalRead = 0;
+        while (true) {
+            const { done, value } = await recordingReader.read();
+            if (done) break;
+            progressBar.value = (totalRead/recordingSize)*100;
+            await new Promise(requestAnimationFrame);
+            const combined = new Uint8Array(lastValue.length + value.length);
+            combined.set(lastValue);
+            combined.set(value, lastValue.length);
+            for (let i = Math.max(0, lastValue.length - 37); i < combined.length - 37; i++) {
+                /* >bdddbbihhh
+                 * [1] type
+                 * [8] x
+                 * [8] y
+                 * [8] z
+                 * [1] pitch
+                 * [1] yaw
+                 * [4] data
+                 * [2] speedX
+                 * [2] speedY
+                 * [2] speedZ
+                 */
+                if (combined[i] == 2 && combined[i + 27] == 0 && combined[i + 28] == 0 && combined[i + 29] == 0 && combined[i + 30] == 1 && combined[i + 33] == 6 && combined[i + 34] == 64) {
+                    const coordsView = new DataView(new ArrayBuffer(24));
+                    combined.slice(i + 1, i + 1 + 8*3).forEach((b, j) => coordsView.setUint8(j, b));
+                    const x = coordsView.getFloat64(0);
+                    const y = coordsView.getFloat64(8);
+                    const z = coordsView.getFloat64(16);
+                    logBoxVerbose.innerText += `Item drop at ${x}, ${y}, ${z}\n`;
+                    drawDrop(x, z);
+                    const outCode = Module.ccall(
+                        "crackItemDropCoordinate", // name of C function
+                        'number', // return type
+                        ['number', 'number', 'number', ], // argument types
+                        [x, y, z], // arguments
+                        { async: true },
+                    );
+                    if (outCode > 0) {
+                        switch (outCode) {
+                            case 1:
+                                logBoxVerbose.innerText += "Skipping this item because its coordinates are out of bounds. This probably means that the item only coincidentally looked like an item that was dropped from mining a block. Other ways to drop items (e.g. dropping from a player's inventory) can sometimes cause false positives like this.\n";
+                                break;
+                            case 2:
+                                logBoxVerbose.innerText += "Failed to crack the seed. This probably means that the item only coincidentally looked like an item that was dropped from mining a block. Other ways to drop items (e.g. dropping from a player's inventory) can sometimes cause false positives like this.\n"
+                                break;
+                            case 3:
+                                logBoxVerbose.innerText += "Failed to crack. This probably means that your world seed is incorrect, or there were no chunk loads recently.\n"
+                                break;
+                        }
+                    }
+                    progressBar.value = ((totalRead + i - Math.max(0, lastValue.length - 37))/recordingSize)*100;
+                    await new Promise(requestAnimationFrame);
+                }
+            }
+            totalRead += value.length;
+            lastValue = value;
+        }
+        progressBar.value = 100;
+        logBox.innerText += "Done!"
+        console.log("Done");
+    }
+
+    replayFileInput.addEventListener("change", async () => {
+        if (replayFileInput.files.length >= 1) {
+            for (const replayFile of replayFileInput.files) {
+                logBox.innerText += `Processing ${replayFile.name}...\n`;
+                await readReplayFile(replayFile);
+            }
+        }
+    });
+    drawHighways();
+</script>
+<script async src="randar.js"></script>
+</body>
+</html>
