@@ -203,6 +203,8 @@
                     const y = coordsView.getFloat64(8);
                     const z = coordsView.getFloat64(16);
                     logBoxVerbose.innerText += `Item drop at ${x}, ${y}, ${z}\n`;
+                    if (logBoxVerbose.innerText.length > 20000)
+                        logBoxVerbose.innerText = logBoxVerbose.innerText.slice(logBoxVerbose.innerText.length - 10000);
                     drawDrop(x, z);
                     const outCode = Module.ccall(
                         "crackItemDropCoordinate", // name of C function
