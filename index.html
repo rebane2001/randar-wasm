@@ -23,6 +23,12 @@
             scrollbar-width: none;
         }
 
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
         html::-webkit-scrollbar {
             display: none;
         }
@@ -39,6 +45,15 @@
 
         * {
             cursor: url("cursor.png"), auto;
+        }
+
+        #replayFileInputLabel, #logBox {
+            padding: 8px 0 0 8px;
+            display: block;
+        }
+
+        #replayFileInputLabel {
+            margin-bottom: -8px;
         }
 
         .logBox {
@@ -147,10 +162,8 @@
 
         if (isRunning) return;
 
-        if (ev.dataTransfer.items) {
-          [...ev.dataTransfer.items].forEach(async (item, i) => { if (item.kind === "file") await processFile(item.getAsFile()) });
-        } else {
-          [...ev.dataTransfer.files].forEach(async (replayFile, i) => await processFile(replayFile));
+        for (const replayFile of (ev.dataTransfer.items) ? [...ev.dataTransfer.items].filter(item => item.kind === "file").map(item => item.getAsFile()) : [...ev.dataTransfer.files]) {
+            await processFile(replayFile);
         }
     };
 
