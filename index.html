@@ -103,6 +103,7 @@
 
     const found = [];
 
+    let volume = 0.35;
     let isRunning = false;
 
     document.body.ondragover = (ev) => ev.preventDefault();
@@ -128,7 +129,7 @@
       oscillator.frequency.value = f;
       oscillator.connect(vol);
       vol.connect(audioContext.destination);
-      vol.gain.value = v;
+      vol.gain.value = v*volume;
       oscillator.start();
       setTimeout(() => oscillator.stop(), l);
     }
