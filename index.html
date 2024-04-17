@@ -66,6 +66,24 @@
             top: 0;
         }
 
+        #seedInput {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            height: 14px;
+            font-size: 14px;
+            text-align: right;
+            background: black;
+            color: #FFF;
+            border: none;
+            font-family: "Chakra Petch", sans-serif;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+
         h1 {
             position: absolute;
             left: 40px;
@@ -91,7 +109,7 @@
 </head>
 <body>
     <h1><a href="https://randar.2b2t.website/">Randar</a></h1>
-<input type="file" id="replayFileInput" multiple />
+<label for="replayFileInput" id="replayFileInputLabel">Click here (or drag files to the window)</label><input type="file" id="replayFileInput" name="replayFileInput" multiple /><input type="text" id="seedInput" value="-4172144997902289642" />
 <div id="progressBar" style="width: 0"></div>
 <div class="logBox" id="logBox"></div>
 <div class="logBox" id="logBoxVerbose"></div>
@@ -99,7 +117,9 @@
 <script>
     var Module = { print: gotOutput };
 
+    const replayFileInputLabel = document.getElementById("replayFileInputLabel");
     const replayFileInput = document.getElementById("replayFileInput");
+    const seedInput = document.getElementById("seedInput");
     const progressBar = document.getElementById("progressBar");
     const logBox = document.getElementById("logBox");
     const logBoxVerbose = document.getElementById("logBoxVerbose");
@@ -191,6 +211,8 @@
     function gotOutput(output) {
         if (output.startsWith("c")) {
             gotCoords(output.slice(1));
+        } else {
+            console.warn(output);
         }
     }
     
@@ -198,7 +220,6 @@
         const [x, z] = coords.split(",").map(e => parseInt(e));
         if (!found.includes(coords)) {
             found.push(coords);
-            console.log(coords);
             drawWoodland(true, x, z);
             logBox.innerText = `Located someone between [${x * 1280 - 128}, ${z * 1280 - 128}] and [${x * 1280 + 1151}, ${z * 1280 + 1151}]\n` + logBox.innerText;
         } else {
@@ -211,19 +232,21 @@
     async function readReplayFileSafe(replayFile) {
         try {
             isRunning = true;
-            replayFileInput.style.display = "none";
+            replayFileInputLabel.style.display = "none";
+            seedInput.style.display = "none";
             progressBar.style.display = "block";
             await readReplayFile(replayFile);
         } catch (e) {
             console.error(e);
         } finally {
             isRunning = false;
-            replayFileInput.style.display = "block";
+            replayFileInputLabel.style.display = "block";
             progressBar.style.display = "none";
         }
     }
 
     async function readReplayFile(replayFile) {
+        const worldSeed = BigInt(seedInput.value);
         const entries = await (new zip.ZipReader(new zip.BlobReader(replayFile))).getEntries({});
         const recordingEntry = entries.find(e => e.filename === "recording.tmcpr");
         const recordingSize = recordingEntry.uncompressedSize;
@@ -265,8 +288,8 @@
                     const outCode = Module.ccall(
                         "crackItemDropCoordinate", // name of C function
                         'number', // return type
-                        ['number', 'number', 'number', ], // argument types
-                        [x, y, z], // arguments
+                        ['number', 'number', 'number', 'BigInt' ], // argument types
+                        [x, y, z, worldSeed], // arguments
                         { async: true },
                     );
                     if (outCode > 0) {
@@ -291,7 +314,6 @@
         }
         setProgress(100);
         logBox.innerText = "Done!\n" + logBox.innerText
-        console.log("Done");
     }
 
     async function processFile(replayFile) {

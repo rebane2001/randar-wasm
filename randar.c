@@ -2,7 +2,7 @@
 #include <math.h>
 #include <emscripten/emscripten.h>
 
-long long WORLD_SEED = -4172144997902289642LL;
+long long WORLD_SEED_2B = -4172144997902289642LL;
 
 #ifdef __cplusplus
 #define EXTERN extern "C"
@@ -10,7 +10,7 @@ long long WORLD_SEED = -4172144997902289642LL;
 #define EXTERN
 #endif
 
-EXTERN EMSCRIPTEN_KEEPALIVE int crackItemDropCoordinate(double dropX, double dropY, double dropZ) {
+EXTERN EMSCRIPTEN_KEEPALIVE int crackItemDropCoordinate(double dropX, double dropY, double dropZ, long long worldSeed) {
     float spawnX = ((float) (dropX - (int) floor(dropX) - ((double)0.25))) * 2;
     float spawnY = ((float) (dropY - (int) floor(dropY) - ((double)0.25))) * 2;
     float spawnZ = ((float) (dropZ - (int) floor(dropZ) - ((double)0.25))) * 2;
@@ -37,7 +37,7 @@ EXTERN EMSCRIPTEN_KEEPALIVE int crackItemDropCoordinate(double dropX, double dro
     long long origSeed = seed;
     for (int i = 0; i < 5000; i++) {
         for (int x = -23440; x <= 23440; x++) {
-            long long z = (((seed ^ 25214903917L) - WORLD_SEED - 10387319 - x * 341873128712L) * 211541297333629L) << 16 >> 16;
+            long long z = (((seed ^ 25214903917L) - worldSeed - 10387319 - x * 341873128712L) * 211541297333629L) << 16 >> 16;
             if (z >= -23440 && z <= 23440) {
                 // printf("Item drop appeared at %f %f %f\n", dropX, dropY, dropZ);
                 // printf("RNG measurements are therefore %d %d %d\n", measurement1, measurement2, measurement3);
