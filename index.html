@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Randar :3</title>
     <script src="zip.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
     <style type="text/css">
         html {
             background: black;
@@ -21,15 +21,15 @@
             display: none;
         }
 
-::-moz-selection { /* Code for Firefox */
-  color: #0062ff;
-  background: #ffb300;
-}
-
-::selection {
-  color: #0062ff;
-  background: #ffb300;
-}
+        ::-moz-selection { /* Code for Firefox */
+          color: #0062ff;
+          background: #ffb300;
+        }
+        
+        ::selection {
+          color: #0062ff;
+          background: #ffb300;
+        }
 
         * {
             cursor: url("cursor.png"), auto;
@@ -72,7 +72,7 @@
 <body>
     <h1>Randar</h1>
 <input type="file" id="replayFileInput" multiple />
-<progress id="progressBar" max="100" value="0"></progress>
+<progress id="progressBar" max="100" value="0" style="display: none"></progress>
 <div class="logBox" id="logBox"></div>
 <div class="logBox" id="logBoxVerbose"></div>
 <canvas id="canvas" width="1000" height="1000"></canvas>
@@ -90,6 +90,23 @@
     const canvasScale = canvasDist/500;
 
     const found = [];
+
+    let isRunning = false;
+
+    document.body.ondragover = (ev) => ev.preventDefault();
+
+    document.body.ondrop = async (ev) => {
+        ev.preventDefault();
+
+        if (isRunning) return;
+
+        if (ev.dataTransfer.items) {
+          [...ev.dataTransfer.items].forEach(async (item, i) => { if (item.kind === "file") await processFile(item.getAsFile()) });
+        } else {
+          [...ev.dataTransfer.files].forEach(async (replayFile, i) => await processFile(replayFile));
+        }
+    };
+
 
     const audioContext = new AudioContext();
     function beep(t, f, l, v) {
@@ -167,6 +184,21 @@
         }
     }
 
+    async function readReplayFileSafe(replayFile) {
+        try {
+            isRunning = true;
+            replayFileInput.style.display = "none";
+            progressBar.style.display = "block";
+            await readReplayFile(replayFile);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            isRunning = false;
+            replayFileInput.style.display = "block";
+            progressBar.style.display = "none";
+        }
+    }
+
     async function readReplayFile(replayFile) {
         const entries = await (new zip.ZipReader(new zip.BlobReader(replayFile))).getEntries({});
         const recordingEntry = entries.find(e => e.filename === "recording.tmcpr");
@@ -238,11 +270,15 @@
         console.log("Done");
     }
 
+    async function processFile(replayFile) {
+        logBox.innerText = `Processing ${replayFile.name}...\n` + logBox.innerText;
+        await readReplayFileSafe(replayFile);
+    }
+
     replayFileInput.addEventListener("change", async () => {
         if (replayFileInput.files.length >= 1) {
             for (const replayFile of replayFileInput.files) {
-                logBox.innerText = `Processing ${replayFile.name}...\n` + logBox.innerText;
-                await readReplayFile(replayFile);
+                processFile(replayFile);
             }
         }
     });
