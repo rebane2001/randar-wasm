@@ -58,6 +58,14 @@
             height: 100%;
         }
 
+        #progressBar {
+            background: #FFF;
+            height: 8px;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
         h1 {
             position: absolute;
             left: 40px;
@@ -84,7 +92,7 @@
 <body>
     <h1><a href="https://randar.2b2t.website/">Randar</a></h1>
 <input type="file" id="replayFileInput" multiple />
-<progress id="progressBar" max="100" value="0" style="display: none"></progress>
+<div id="progressBar" style="width: 0"></div>
 <div class="logBox" id="logBox"></div>
 <div class="logBox" id="logBoxVerbose"></div>
 <canvas id="canvas" width="1000" height="1000"></canvas>
@@ -120,7 +128,6 @@
         }
     };
 
-
     const audioContext = new AudioContext();
     function beep(t, f, l, v) {
       const vol = audioContext.createGain();
@@ -132,6 +139,10 @@
       vol.gain.value = v*volume;
       oscillator.start();
       setTimeout(() => oscillator.stop(), l);
+    }
+
+    function setProgress(percentage) {
+        progressBar.style.width = percentage + "%";
     }
 
     function drawHighways() {
@@ -223,7 +234,7 @@
         while (true) {
             const { done, value } = await recordingReader.read();
             if (done) break;
-            progressBar.value = (totalRead/recordingSize)*100;
+            setProgress((totalRead/recordingSize)*100);
             await new Promise(requestAnimationFrame);
             const combined = new Uint8Array(lastValue.length + value.length);
             combined.set(lastValue);
@@ -271,14 +282,14 @@
                                 break;
                         }
                     }
-                    progressBar.value = ((totalRead + i - Math.max(0, lastValue.length - 37))/recordingSize)*100;
+                    setProgress(((totalRead + i - Math.max(0, lastValue.length - 37))/recordingSize)*100);
                     await new Promise(requestAnimationFrame);
                 }
             }
             totalRead += value.length;
             lastValue = value;
         }
-        progressBar.value = 100;
+        setProgress(100);
         logBox.innerText = "Done!\n" + logBox.innerText
         console.log("Done");
     }
