@@ -4,6 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Randar :3</title>
+    <meta content="Randar" property="og:title" />
+    <meta content="A website where you can drag in your ReplayMod files from 1.12.2 and see the coordinates of other players." property="og:description" />
+    <meta content="https://hobune.stream/randar/" property="og:url" />
+    <meta content="https://hobune.stream/randar/banner.png" property="og:image" />
+    <meta content="#FFFFFF" data-react-helmet="true" name="theme-color" />
+    <meta name="twitter:card" content="summary_large_image">
     <script src="zip.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -237,6 +243,7 @@
             progressBar.style.display = "block";
             await readReplayFile(replayFile);
         } catch (e) {
+            logBox.innerText = `Couldn't process the file due to: ${e}\n` + logBox.innerText;
             console.error(e);
         } finally {
             isRunning = false;
